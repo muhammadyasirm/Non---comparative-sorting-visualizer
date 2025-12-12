@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Non-Comparative Sorting Visualizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f0f2f5;
+        margin: 0;
+        padding: 20px;
+        color: #333;
+      }
+      header {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      h1 {
+        margin: 0;
+        color: #5d5dff;
+        font-size: 28px;
+      }
+      .controls {
+        margin-top: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      input,
+      select,
+      button {
+        padding: 12px;
+        font-size: 16px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+      }
+      button {
+        background: #5d5dff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #4848cc;
+      }
+      button.start {
+        background: #00c851;
+      }
+      button.reset {
+        background: #ff4444;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 20px;
+        margin-top: 20px;
+      }
+      @media (max-width: 900px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      #visualization {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        min-height: 500px;
+      }
+      #bars {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        height: 400px;
+        gap: 8px;
+        padding: 10px 0;
+      }
+      .bar {
+        width: 45px;
+        background: #5d5dff;
+        border-radius: 8px 8px 0 0;
+        position: relative;
+        transition: all 0.5s ease;
+      }
+      .bar span {
+        position: absolute;
+        top: -35px;
+        background: #333;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 15px;
+      }
+      .bar.highlight {
+        background: #ffeb3b !important;
+        transform: scale(1.15);
+      }
+      .bar.sorted {
+        background: #00c851;
+      }
+
+      #info {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+      #counters,
+      #log {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-family: monospace;
+      }
+      #aux,
+      #aux2 {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .box {
+        background: #e3f2fd;
+        padding: 15px;
+        text-align: center;
+        border-radius: 8px;
+        border: 2px solid #bbdefb;
+        min-height: 80px;
+      }
+      .box-title {
+        font-weight: bold;
+        color: #1976d2;
+        margin-bottom: 8px;
+      }
+      .box-content {
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      /* Radix Pass History */
+      .pass {
+        margin: 15px 0;
+        padding: 12px;
+        background: #e8f5e9;
+        border-radius: 8px;
+        border-left: 5px solid #00c851;
+      }
+      .pass-title {
+        font-weight: bold;
+        color: #2e7d32;
+        margin-bottom: 8px;
+      }
+      .pass-array {
+        font-size: 18px;
+        font-family: monospace;
+        background: white;
+        padding: 10px;
+        border-radius: 6px;
+      }
+
+      /* Buckets for Radix */
+      #buckets {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .bucket {
+        background: #e3f2fd;
+        padding: 15px;
+        text-align: center;
+        border-radius: 8px;
+        border: 2px solid #bbdefb;
+        min-height: 90px;
+      }
+      .bucket-title {
+        font-weight: bold;
+        color: #1976d2;
+      }
+      .bucket-content {
+        margin-top: 8px;
+        font-weight: bold;
+        font-size: 16px;
+        min-height: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Non-Comparative Sorting Visualizer</h1>
+      <div class="controls">
+        <input type="text" id="input" placeholder="e.g. 34, 12, 67, 23, 9" />
+        <button id="setBtn">Set Array</button>
+        <select id="algo">
+          <option>Counting Sort</option>
+          <option>Radix Sort</option>
+          <option>Bucket Sort</option>
+        </select>
+        <button id="startBtn" class="start" disabled>Start Sorting</button>
+        <button id="resetBtn" class="reset">Reset</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <div id="visualization">
+        <div id="bars"></div>
+      </div>
+
+      <div id="info">
+        <div id="counters">
+          Reads: <span id="reads">0</span> | Writes:
+          <span id="writes">0</span> | Steps: <span id="steps">0</span>
+        </div>
+
+        <div id="aux"></div>
+        <div id="aux2"></div>
+        <div id="passes"></div>
+        <div id="currentPass"></div>
+        <div id="buckets"></div>
+
+        <div id="log">Ready! Enter numbers and click "Set Array"</div>
+      </div>
+    </div>
+
+    <script>
+      let array = [];
+      let bars = [];
+      let isRunning = false;
+      let timer = null;
+
+      const input = document.getElementById("input");
+      const setBtn = document.getElementById("setBtn");
+      const algoSelect = document.getElementById("algo");
+      const startBtn = document.getElementById("startBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const barsContainer = document.getElementById("bars");
+      const auxContainer = document.getElementById("aux");
+      const aux2Container = document.getElementById("aux2");
+      const passesContainer = document.getElementById("passes");
+      const currentPassContainer = document.getElementById("currentPass");
+      const bucketsContainer = document.getElementById("buckets");
+      const log = document.getElementById("log");
+
+      let reads = 0,
+        writes = 0,
+        steps = 0;
+
+      function updateCounters() {
+        document.getElementById("reads").textContent = reads;
+        document.getElementById("writes").textContent = writes;
+        document.getElementById("steps").textContent = steps;
+      }
+
+      function addLog(msg) {
+        log.innerHTML += "<br>" + msg;
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function drawBars() {
+        barsContainer.innerHTML = "";
+        bars = [];
+        const max = Math.max(...array, 1);
+        array.forEach((num, i) => {
+          const bar = document.createElement("div");
+          bar.className = "bar";
+          bar.style.height = (num / max) * 360 + "px";
+          const label = document.createElement("span");
+          label.textContent = num;
+          bar.appendChild(label);
+          barsContainer.appendChild(bar);
+          bars.push(bar);
+        });
+      }
+
+      function highlight(index) {
+        bars.forEach((b) => b.classList.remove("highlight"));
+        if (index >= 0 && index < bars.length)
+          bars[index].classList.add("highlight");
+      }
+
+      function markSorted() {
+        bars.forEach((b) => b.classList.add("sorted"));
+      }
+
+      function showBoxes(container, count, title = "Array", prefix = "box") {
+        container.innerHTML = `<div style="grid-column: span ${count}; margin-bottom:10px; font-weight:bold; color:#1976d2;">${title}</div>`;
+        for (let i = 0; i < count; i++) {
+          const box = document.createElement("div");
+          box.className = "box";
+          box.innerHTML = `<div class="box-title">${i}</div><div class="box-content" id="${prefix}${i}">0</div>`;
+          container.appendChild(box);
+        }
+      }
+
+      function updateBox(prefix, index, value) {
+        const el = document.getElementById(prefix + index);
+        if (el) el.textContent = value;
+      }
+
+      function addPass(passNumber, place, arr) {
+        const passDiv = document.createElement("div");
+        passDiv.className = "pass";
+        passDiv.innerHTML = `
+    <div class="pass-title">Pass ${passNumber} - ${place} Place</div>
+    <div class="pass-array">[ ${arr.join(" , ")} ]</div>
+  `;
+        passesContainer.appendChild(passDiv);
+      }
+
+      function showCurrentPass(passNumber, place) {
+        currentPassContainer.innerHTML = `
+    <div style="background:#fff3e0; padding:15px; border-radius:8px; border-left:5px solid #ff9800;">
+      <strong>Current Pass ${passNumber}</strong> → ${place} Place
+    </div>
+  `;
+      }
+
+      function createBuckets() {
+        bucketsContainer.innerHTML = "";
+        for (let i = 0; i < 10; i++) {
+          const bucket = document.createElement("div");
+          bucket.className = "bucket";
+          bucket.innerHTML = `<div class="bucket-title">Bucket ${i}</div><div class="bucket-content" id="b${i}">-</div>`;
+          bucketsContainer.appendChild(bucket);
+        }
+      }
+
+      function updateBucket(digit, content) {
+        document.getElementById("b" + digit).textContent = content || "-";
+      }
+
+      function sleep(ms) {
+        return new Promise((resolve) => (timer = setTimeout(resolve, ms)));
+      }
+
+      function reset() {
+        clearTimeout(timer);
+        isRunning = false;
+        array = [];
+        reads = writes = steps = 0;
+        updateCounters();
+        barsContainer.innerHTML = "Enter array and Set";
+        auxContainer.innerHTML = "";
+        aux2Container.innerHTML = "";
+        passesContainer.innerHTML = "";
+        currentPassContainer.innerHTML = "";
+        bucketsContainer.innerHTML = "";
+        log.innerHTML = "Reset done!";
+        startBtn.disabled = true;
+      }
+
+      setBtn.onclick = () => {
+        const nums = input.value
+          .split(",")
+          .map((n) => parseInt(n.trim()))
+          .filter((n) => !isNaN(n) && n >= 0);
+        if (nums.length === 0) {
+          alert("Valid numbers daalo!");
+          return;
+        }
+        array = nums;
+        drawBars();
+        startBtn.disabled = false;
+        addLog(`Array set: [${array.join(", ")}]`);
+        passesContainer.innerHTML = "";
+        if (algoSelect.value === "Radix Sort") {
+          addPass(0, "Initial", [...array]);
+        }
+      };
+
+      startBtn.onclick = async () => {
+        if (isRunning) return;
+        isRunning = true;
+        startBtn.disabled = true;
+        reads = writes = steps = 0;
+        updateCounters();
+        log.innerHTML = "Sorting started...";
+        auxContainer.innerHTML = "";
+        aux2Container.innerHTML = "";
+        passesContainer.innerHTML = "";
+        currentPassContainer.innerHTML = "";
+        bucketsContainer.innerHTML = "";
+
+        const algo = algoSelect.value;
+
+        if (algo === "Counting Sort") await countingSort();
+        else if (algo === "Radix Sort") await radixSort();
+        else if (algo === "Bucket Sort") await bucketSort();
+
+        if (isRunning) {
+          markSorted();
+          addLog("Sorting Complete!");
+        }
+        isRunning = false;
+        startBtn.disabled = false;
+      };
+
+      // ================== COUNTING SORT (from 1st code) ==================
+      async function countingSort() {
+        const max = Math.max(...array);
+        const countSize = max + 1;
+        showBoxes(auxContainer, countSize, "1. Counting Array", "count");
+        const count = new Array(countSize).fill(0);
+
+        for (let i = 0; i < array.length; i++) {
+          if (!isRunning) return;
+          highlight(i);
+          addLog(`Counting ${array[i]}`);
+          count[array[i]]++;
+          updateBox("count", array[i], count[array[i]]);
+          reads++;
+          steps++;
+          updateCounters();
+          await sleep(600);
+        }
+
+        showBoxes(aux2Container, countSize, "2. Position Array", "pos");
+        const position = [...count];
+        for (let i = 1; i < countSize; i++) {
+          if (!isRunning) return;
+          position[i] += position[i - 1];
+          updateBox("pos", i, position[i]);
+          addLog(`Updating position[${i}] = ${position[i]}`);
+          steps++;
+          updateCounters();
+          await sleep(500);
+        }
+
+        const output = new Array(array.length);
+        for (let i = array.length - 1; i >= 0; i--) {
+          if (!isRunning) return;
+          highlight(i);
+          const val = array[i];
+          const pos = --position[val];
+          output[pos] = val;
+          addLog(`Placing ${val} at output[${pos}]`);
+          writes++;
+          steps++;
+          updateCounters();
+          await sleep(600);
+        }
+        array = output;
+        drawBars();
+      }
+
+      // ================== RADIX SORT (from 2nd code - BEST VERSION) ==================
+      async function radixSort() {
+        createBuckets();
+        let max = Math.max(...array);
+        let pass = 1;
+
+        for (let exp = 1; Math.floor(max / exp) > 0; exp *= 10) {
+          if (!isRunning) return;
+          const place =
+            exp === 1
+              ? "Units"
+              : exp === 10
+              ? "Tens"
+              : exp === 100
+              ? "Hundreds"
+              : `${exp}s`;
+          showCurrentPass(pass, place);
+          addLog(`Pass ${pass}: Processing ${place} place`);
+
+          const buckets = Array(10)
+            .fill()
+            .map(() => []);
+          for (let i = 0; i < array.length; i++) {
+            if (!isRunning) return;
+            highlight(i);
+            const digit = Math.floor(array[i] / exp) % 10;
+            buckets[digit].push(array[i]);
+            updateBucket(digit, buckets[digit].join(", ") || "-");
+            addLog(`${array[i]} → digit ${digit} → bucket ${digit}`);
+            reads++;
+            steps++;
+            updateCounters();
+            await sleep(800);
+          }
+
+          let idx = 0;
+          for (let d = 0; d < 10; d++) {
+            for (let num of buckets[d]) {
+              array[idx++] = num;
+              writes++;
+              steps++;
+              updateCounters();
+            }
+            updateBucket(d, "-");
+          }
+          drawBars();
+          addPass(pass, place, [...array]);
+          addLog(`Pass ${pass} complete!`);
+          await sleep(1000);
+          pass++;
+        }
+      }
+
+      // ================== BUCKET SORT (from 1st code) ==================
+      async function bucketSort() {
+        const n = array.length;
+        showBoxes(auxContainer, n, "Buckets", "box");
+        const buckets = Array(n)
+          .fill()
+          .map(() => []);
+
+        for (let i = 0; i < n; i++) {
+          if (!isRunning) return;
+          highlight(i);
+          const bi = Math.min(
+            Math.floor((array[i] * n) / (Math.max(...array) + 1)),
+            n - 1
+          );
+          buckets[bi].push(array[i]);
+          updateBox("box", bi, buckets[bi].join(", ") || "0");
+          addLog(`Put ${array[i]} in bucket ${bi}`);
+          reads++;
+          steps++;
+          updateCounters();
+          await sleep(700);
+        }
+
+        let idx = 0;
+        for (let b of buckets) {
+          for (let num of b.sort((a, b) => a - b)) {
+            array[idx++] = num;
+            writes++;
+            steps++;
+            updateCounters();
+          }
+        }
+        drawBars();
+      }
+
+      resetBtn.onclick = reset;
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") setBtn.click();
+      });
+      reset();
+    </script>
+  </body>
+</html>
